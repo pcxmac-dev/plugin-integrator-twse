@@ -2,7 +2,9 @@
 
 ## 0.2.0 (2026-11-03)
 
-A class on plugin API 2.0 (liminal-lib 1.3.0; the user: "all the plugins under liminal should basically follow
+Renamed `plugin-integrator-twse` (the package `plugin_integrator_twse`; it was `liminal-plugin-twse`) on 2026-11-03: the naming by system (plugins are `plugin-<app>-<name>`), on liminal-libs 1.4.0 (`liminal_libs`, the library renamed with it).
+
+A class on plugin API 2.0 (liminal-libs 1.3.0; the user: "all the plugins under liminal should basically follow
 inheritance/oop paradigm"): `TwsePlugin(FeedPlugin)`, what the `Provider` record declared as class attributes
 and its callbacks as methods (`build`, `markets`, `rate`), `PLUGIN` its instance; it declares its publication
 delay itself too (`delays`: each day's bars once the day is over, the row the library held for the `twse`

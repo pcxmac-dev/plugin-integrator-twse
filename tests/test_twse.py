@@ -8,19 +8,19 @@ from importlib.metadata import version
 
 import pytest
 
-from liminal_lib import composite, freshness
-from liminal_lib.collector import history_floor
-from liminal_lib.config import load_settings
-from liminal_lib.errors import NotEntitled, SourceError
-from liminal_lib.freshness import Delay
-from liminal_lib.sources import is_archive, markets, provider, rate_window, registry, supports
-from liminal_lib.sources.archive import ET, ms
-from liminal_lib.sources.http import PublicClient
-from liminal_lib.symbols import resolve
+from liminal_libs import composite, freshness
+from liminal_libs.collector import history_floor
+from liminal_libs.config import load_settings
+from liminal_libs.errors import NotEntitled, SourceError
+from liminal_libs.freshness import Delay
+from liminal_libs.sources import is_archive, markets, provider, rate_window, registry, supports
+from liminal_libs.sources.archive import ET, ms
+from liminal_libs.sources.http import PublicClient
+from liminal_libs.symbols import resolve
 
-import liminal_plugin_twse as twse
-from liminal_plugin_twse import PER_DAY, PER_RUN, TIER
-from liminal_plugin_twse.client import (OPENAPI, TAIPEI, WWW, TwseSource, listing_type, number, read_month, roc_date,
+import plugin_integrator_twse as twse
+from plugin_integrator_twse import PER_DAY, PER_RUN, TIER
+from plugin_integrator_twse.client import (OPENAPI, TAIPEI, WWW, TwseSource, listing_type, number, read_month, roc_date,
                                         twse_code)
 
 from .conftest import FakeResponse, FakeSession
@@ -124,12 +124,12 @@ def test_the_app_loads_it_from_this_package_with_its_own_version():
     registry.reload()
     p = provider("twse")
     assert p is not None, dict(registry.errors())
-    assert p.origin in {"package: liminal-plugin-twse (liminal_plugin_twse)", "plugins/liminal-plugin-twse (liminal_plugin_twse)"}
-    assert p.version == version("liminal-plugin-twse") and twse.PLUGIN.version == "" and p.api == "2.0"
+    assert p.origin in {"package: plugin-integrator-twse (plugin_integrator_twse)", "plugins/plugin-integrator-twse (plugin_integrator_twse)"}
+    assert p.version == version("plugin-integrator-twse") and twse.PLUGIN.version == "" and p.api == "2.0"
     assert registry.api_refusal(p.api) is None
     assert not [why for where, why in registry.errors() if "twse" in where or "twse" in why]
     row = {r["name"]: r for r in registry.menu()}["twse"]
-    assert (row["version"], row["api"]) == (version("liminal-plugin-twse"), "2.0")
+    assert (row["version"], row["api"]) == (version("plugin-integrator-twse"), "2.0")
 
 
 def test_it_carries_the_taiwan_stock_exchange_alone_on_its_own_days_and_limits():
@@ -154,7 +154,7 @@ def test_it_is_a_class_on_the_contract_and_the_app_loads_it_as_one():
     assert not twse.PLUGIN.has_scan and not twse.PLUGIN.has_settings and not twse.PLUGIN.gives("view")
     assert twse.PLUGIN.delays == {"twse": {"stock": Delay("eod")}} and twse.PLUGIN.hours == {}
     p = registry.reload()["twse"]
-    assert type(p) is twse.TwsePlugin and (p.version, p.api) == (version("liminal-plugin-twse"), "2.0")
+    assert type(p) is twse.TwsePlugin and (p.version, p.api) == (version("plugin-integrator-twse"), "2.0")
     assert not [why for where, why in registry.errors() if "twse" in where or "twse" in why]
     moved = twse.PLUGIN.with_(order=1)  # a changed copy (the registry's version and origin come this way)
     assert type(moved) is twse.TwsePlugin and moved.order == 1 and twse.PLUGIN.order == 110

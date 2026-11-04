@@ -19,8 +19,8 @@ York of the Taipei date like every stock's, its volume in shares, its vwap the d
 shares. TPEx, the over-the-counter board (ROCO, .TWO), is a follow-up: its OpenAPI's endpoints were
 not verified.
 
-A Liminal plugin released on its own, a class on plugin API 2.0 (liminal_lib.sources.registry:
-FeedPlugin; liminal-lib 1.3.0: what it declares class attributes, what it does methods), registered
+A Liminal plugin released on its own, a class on plugin API 2.0 (liminal_libs.sources.registry:
+FeedPlugin; liminal-libs 1.3.0: what it declares class attributes, what it does methods), registered
 under the entry point group `liminal.providers`. It relies on the contract's `exchanges` (the Taiwan
 Stock Exchange's listings, XTAI, and no US listing) and `delays` (each day's bars once the day is
 over) and nothing of the app outside it; its version is this distribution's (pyproject.toml).
@@ -29,9 +29,9 @@ from __future__ import annotations
 
 from datetime import date
 
-from liminal_lib.config import Tier
-from liminal_lib.freshness import Delay
-from liminal_lib.sources.registry import FeedPlugin, public_client
+from liminal_libs.config import Tier
+from liminal_libs.freshness import Delay
+from liminal_libs.sources.registry import FeedPlugin, public_client
 from .client import OPENAPI, WWW, TwseSource
 
 # its plan and caps: a public site with no published limits whose data pages refuse bursts; asked slowly
