@@ -12,6 +12,7 @@ from liminal_lib import composite, freshness
 from liminal_lib.collector import history_floor
 from liminal_lib.config import load_settings
 from liminal_lib.errors import NotEntitled, SourceError
+from liminal_lib.freshness import Delay
 from liminal_lib.sources import is_archive, markets, provider, rate_window, registry, supports
 from liminal_lib.sources.archive import ET, ms
 from liminal_lib.sources.http import PublicClient
@@ -124,11 +125,11 @@ def test_the_app_loads_it_from_this_package_with_its_own_version():
     p = provider("twse")
     assert p is not None, dict(registry.errors())
     assert p.origin in {"package: liminal-plugin-twse (liminal_plugin_twse)", "plugins/liminal-plugin-twse (liminal_plugin_twse)"}
-    assert p.version == version("liminal-plugin-twse") and twse.PLUGIN.version == "" and p.api == "1.12"
+    assert p.version == version("liminal-plugin-twse") and twse.PLUGIN.version == "" and p.api == "2.0"
     assert registry.api_refusal(p.api) is None
     assert not [why for where, why in registry.errors() if "twse" in where or "twse" in why]
     row = {r["name"]: r for r in registry.menu()}["twse"]
-    assert (row["version"], row["api"]) == (version("liminal-plugin-twse"), "1.12")
+    assert (row["version"], row["api"]) == (version("liminal-plugin-twse"), "2.0")
 
 
 def test_it_carries_the_taiwan_stock_exchange_alone_on_its_own_days_and_limits():
@@ -140,8 +141,21 @@ def test_it_carries_the_taiwan_stock_exchange_alone_on_its_own_days_and_limits()
     assert supports("twse", resolve("2330.TW")) and supports("twse", resolve("TWSE:2330")) and supports("twse", resolve("2330::XTAI"))
     assert not supports("twse", resolve("AAPL")) and not supports("twse", resolve("7203.T")) and not supports("twse", resolve("EURUSD"))
     assert provider("twse").exchanges == {"XTAI"} and composite.feed_kind("twse", "stock") == "exchange"
-    assert freshness.plan_delay(TIER, "stock").kind == "eod"  # the library's rule for the twse tier: each day once it is over
+    assert freshness.plan_delay(TIER, "stock").kind == "eod"  # its own rule (TwsePlugin.delays; the library's too): each day once it is over
     assert history_floor(TIER, date(2026, 11, 2)) == date(2010, 1, 4)
-    src = twse.build(s, 5)
+    src = twse.PLUGIN.build(s, 5)
     assert src.name == "twse" and src.client.base_url != src.openapi.base_url and src.requests_made == 0
     assert src.final_through() <= datetime.now(timezone.utc).astimezone(TAIPEI).date()
+
+
+def test_it_is_a_class_on_the_contract_and_the_app_loads_it_as_one():
+    assert isinstance(twse.PLUGIN, twse.TwsePlugin) and twse.PLUGIN.api == "2.0" and not twse.PLUGIN.is_record
+    assert twse.PLUGIN.gives("build") and twse.PLUGIN.gives("markets") and twse.PLUGIN.gives("rate")
+    assert not twse.PLUGIN.has_scan and not twse.PLUGIN.has_settings and not twse.PLUGIN.gives("view")
+    assert twse.PLUGIN.delays == {"twse": {"stock": Delay("eod")}} and twse.PLUGIN.hours == {}
+    p = registry.reload()["twse"]
+    assert type(p) is twse.TwsePlugin and (p.version, p.api) == (version("liminal-plugin-twse"), "2.0")
+    assert not [why for where, why in registry.errors() if "twse" in where or "twse" in why]
+    moved = twse.PLUGIN.with_(order=1)  # a changed copy (the registry's version and origin come this way)
+    assert type(moved) is twse.TwsePlugin and moved.order == 1 and twse.PLUGIN.order == 110
+    assert moved.markets(None) == {"stock": "twse"} and moved.rate(None) == (10, 60.0)

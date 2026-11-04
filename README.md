@@ -25,7 +25,7 @@ as `package: liminal-plugin-twse`, with this package's version.
 Into the app's environment, from the app's folder:
 
 ```powershell
-.venv\Scripts\python.exe -m pip install "liminal-plugin-twse @ git+https://github.com/pcxmac-dev/liminal-plugin-twse@v1.0.0"
+.venv\Scripts\python.exe -m pip install "liminal-plugin-twse @ git+https://github.com/pcxmac-dev/liminal-plugin-twse@v0.2.0"
 ```
 
 or with the app's plugins (`pip install -e ".[plugins]"` in liminal-app). The app loads it on its next
@@ -34,9 +34,10 @@ start. No key or setting is needed; it is asked at 10 requests a minute, 600 a r
 
 ## Compatibility
 
-It is written for plugin API 1.12 (`PLUGIN.api`: the exchanges a feed carries, `Provider.exchanges`;
-liminal-lib 1.2.0 or later). An app offering 1.12 or a later 1.x loads it; an app of another major,
-or one older than 1.12, leaves it out and says why on the Plugins view.
+It is written for plugin API 2.0 (`PLUGIN.api`: the class contract, `TwsePlugin` a `FeedPlugin` of
+liminal-lib 1.3.0 or later; the exchanges a feed carries, `exchanges`, among what it declares). An app
+offering 2.0 or a later 2.x loads it; an app of another major, or one older than 2.0, leaves it out
+and says why on the Plugins view.
 
 ## Develop
 

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.0 (2026-11-03)
+
+A class on plugin API 2.0 (liminal-lib 1.3.0; the user: "all the plugins under liminal should basically follow
+inheritance/oop paradigm"): `TwsePlugin(FeedPlugin)`, what the `Provider` record declared as class attributes
+and its callbacks as methods (`build`, `markets`, `rate`), `PLUGIN` its instance; it declares its publication
+delay itself too (`delays`: each day's bars once the day is over, the row the library held for the `twse`
+plan). Every behaviour, limit and string as in 1.0.0. Versioned 0.2.0 with every Liminal distribution of the
+release (its `release/0.2.0` branch; CI against the library's).
+
 ## 1.0.0 (2026-11-02)
 
 The Taiwan Stock Exchange's daily bars from TWSE's open data (the user: "update existing plugins, add exchanges

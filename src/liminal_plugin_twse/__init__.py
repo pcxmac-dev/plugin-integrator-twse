@@ -19,17 +19,19 @@ York of the Taipei date like every stock's, its volume in shares, its vwap the d
 shares. TPEx, the over-the-counter board (ROCO, .TWO), is a follow-up: its OpenAPI's endpoints were
 not verified.
 
-A Liminal plugin released on its own (liminal_lib.sources.registry: Provider), registered under the
-entry point group `liminal.providers`. It relies on plugin API 1.12 (Provider.exchanges: the Taiwan
-Stock Exchange's listings, XTAI, and no US listing) and nothing of the app outside it; its version is
-this distribution's (pyproject.toml).
+A Liminal plugin released on its own, a class on plugin API 2.0 (liminal_lib.sources.registry:
+FeedPlugin; liminal-lib 1.3.0: what it declares class attributes, what it does methods), registered
+under the entry point group `liminal.providers`. It relies on the contract's `exchanges` (the Taiwan
+Stock Exchange's listings, XTAI, and no US listing) and `delays` (each day's bars once the day is
+over) and nothing of the app outside it; its version is this distribution's (pyproject.toml).
 """
 from __future__ import annotations
 
 from datetime import date
 
 from liminal_lib.config import Tier
-from liminal_lib.sources.registry import Provider, public_client
+from liminal_lib.freshness import Delay
+from liminal_lib.sources.registry import FeedPlugin, public_client
 from .client import OPENAPI, WWW, TwseSource
 
 # its plan and caps: a public site with no published limits whose data pages refuse bursts; asked slowly
@@ -37,20 +39,40 @@ TIER = Tier("twse", requests_per_minute=10, history_years=None, history_start=da
 PER_RUN, PER_DAY = 600, 2000
 
 
-def build(settings, request_budget):
-    """The two hosts, each on the library's keyless client (a client keeps its key, here none, to its
-    own host), both counted under the feed's name: one window, one daily cap for the machine."""
-    return TwseSource(public_client("twse", WWW, settings, request_budget), public_client("twse", OPENAPI, settings, None))
+class TwsePlugin(FeedPlugin):
+    """The feed's plugin: what it declares as attributes, what it does as methods (its two hosts'
+    build, its market, the window its limiter keeps); the contract's defaults for the rest."""
+
+    api = "2.0"  # the contract it is written for (the class contract); its version: the distribution's
+    name = "twse"
+    title = "Taiwan Stock Exchange"
+    about = "every listed stock's daily bars from TWSE's open data, from 2010 (no key)"
+    order = 110
+    assets = frozenset({"stock"})
+    exchanges = frozenset({"XTAI"})  # its own listings alone, stored as 2330.TW
+    tier = TIER
+    per_run = PER_RUN
+    per_day = PER_DAY
+    limits = "none published; its data pages refuse bursts (kept at 10 requests a minute)"
+    kind = "exchange"
+    provides = {"stock": ("day",)}
+    per_request = {"day": 22}  # a stock-month a request
+    bulk_resolution = "day"
+    # when its data is published (the library's freshness row for its plan): each day's bars once the
+    # day is over, TWSE's close published
+    delays = {"twse": {"stock": Delay("eod")}}
+
+    def build(self, settings, request_budget):
+        """The two hosts, each on the library's keyless client (a client keeps its key, here none, to its
+        own host), both counted under the feed's name: one window, one daily cap for the machine."""
+        return TwseSource(public_client(self.name, WWW, settings, request_budget),
+                          public_client(self.name, OPENAPI, settings, None))
+
+    def markets(self, settings):
+        return {"stock": self.name}
+
+    def rate(self, settings):
+        return (10, 60.0)
 
 
-PLUGIN = Provider(
-    api="1.12",  # the contract it needs (Provider.exchanges); its version: the distribution's
-    name="twse", title="Taiwan Stock Exchange", build=build, assets=frozenset({"stock"}), order=110,
-    about="every listed stock's daily bars from TWSE's open data, from 2010 (no key)",
-    exchanges=frozenset({"XTAI"}),  # its own listings alone, stored as 2330.TW
-    tier=TIER, per_run=PER_RUN, per_day=PER_DAY,
-    limits="none published; its data pages refuse bursts (kept at 10 requests a minute)",
-    kind="exchange", markets=lambda settings: {"stock": "twse"},
-    provides={"stock": ("day",)}, per_request={"day": 22},  # a stock-month a request
-    bulk_resolution="day", rate=lambda settings: (10, 60.0),
-)
+PLUGIN = TwsePlugin()
