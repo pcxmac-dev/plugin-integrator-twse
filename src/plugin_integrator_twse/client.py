@@ -13,8 +13,13 @@ from liminal_libs.models import Exchange, Instrument, Stock, country, listing_ti
 from liminal_libs.sources.archive import ET, Archive, bounds, ms
 from liminal_libs.sources.http import PublicClient
 
+from .apis import OPENAPI_NAME
+from .facts import NOTES
+
 WWW = "https://www.twse.com.tw"
 OPENAPI = "https://openapi.twse.com.tw"
+MONTH_PAGE = "/exchangeReport/STOCK_DAY"  # the site's report of a stock's days of a month (apis.SITE)
+MARKET_TABLE = "/v1/exchangeReport/STOCK_DAY_ALL"  # the OpenAPI's latest day of every listed stock (apis.OPENAPI)
 MIC = "XTAI"
 TAIPEI = ZoneInfo("Asia/Taipei")
 FINAL_AFTER = time(15, 0)  # a day's bars are final once TWSE has published its close (13:30 Taipei; by 15:00)
@@ -147,8 +152,7 @@ class TwseSource(Archive):
     def _month(self, code: str, month: date) -> list[dict]:
         key = (code, month)
         if key not in self._months:
-            answer = self.client.get("/exchangeReport/STOCK_DAY",
-                                     {"response": "json", "date": month.strftime("%Y%m%d"), "stockNo": code})
+            answer = self.client.get(MONTH_PAGE, {"response": "json", "date": month.strftime("%Y%m%d"), "stockNo": code})
             self._months[key] = read_month(answer)
         return self._months[key]
 
@@ -173,12 +177,16 @@ class TwseSource(Archive):
             yield bars
 
     def _market_rows(self) -> list[dict]:
-        """The latest trading day's table of every listed stock (STOCK_DAY_ALL), once a run."""
+        """The latest trading day's table of every listed stock (STOCK_DAY_ALL), once a run; the day it
+        was of kept for the plugin's page (api_facts: what the OpenAPI said, nothing asked again)."""
         if self._market is None:
-            rows = self.openapi.get("/v1/exchangeReport/STOCK_DAY_ALL")
+            rows = self.openapi.get(MARKET_TABLE)
             if not isinstance(rows, list):
                 raise SourceError(0, "unexpected TWSE answer for STOCK_DAY_ALL (not a list)")
             self._market = [r for r in rows if isinstance(r, dict) and r.get("Code")]
+            days = [d for d in (roc_date(r.get("Date")) for r in self._market) if d is not None]
+            NOTES.keep(OPENAPI_NAME, {"STOCK_DAY_ALL's day": f"{max(days).isoformat() if days else 'none given'} "
+                                                             f"({len(self._market):,} listings)"})
         return self._market
 
     def listings(self, exchange: str) -> list[dict]:

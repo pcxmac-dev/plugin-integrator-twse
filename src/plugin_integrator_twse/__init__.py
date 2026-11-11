@@ -19,11 +19,16 @@ York of the Taipei date like every stock's, its volume in shares, its vwap the d
 shares. TPEx, the over-the-counter board (ROCO, .TWO), is a follow-up: its OpenAPI's endpoints were
 not verified.
 
-A Liminal plugin released on its own, a class on plugin API 2.0 (liminal_libs.sources.registry:
+A Liminal plugin released on its own, a class on plugin API 2.2 (liminal_libs.sources.registry:
 FeedPlugin; liminal-libs 1.3.0: what it declares class attributes, what it does methods), registered
 under the entry point group `liminal.providers`. It relies on the contract's `exchanges` (the Taiwan
 Stock Exchange's listings, XTAI, and no US listing) and `delays` (each day's bars once the day is
 over) and nothing of the app outside it; its version is this distribution's (pyproject.toml).
+
+Plugin API 2.2 (liminal-libs 1.49.0; the user, 2026-11-11: "each plugin should reflect the the API its attached to, and
+present links that provide documentation"): `apis`, the two things it talks to (apis.py: TWSE's OpenAPI and its
+website's reports, with TWSE's pages, every part of each and the calls it makes among the rest), and `api_facts()`,
+what their clients learned while they ran (facts.py), asking nothing.
 """
 from __future__ import annotations
 
@@ -32,7 +37,9 @@ from datetime import date
 from liminal_libs.config import Tier
 from liminal_libs.freshness import Delay
 from liminal_libs.sources.registry import FeedPlugin, public_client
+from .apis import APIS, OPENAPI_NAME, SITE_NAME
 from .client import OPENAPI, WWW, TwseSource
+from .facts import NOTES
 
 # its plan and caps: a public site with no published limits whose data pages refuse bursts; asked slowly
 TIER = Tier("twse", requests_per_minute=10, history_years=None, history_start=date(2010, 1, 4))
@@ -43,7 +50,7 @@ class TwsePlugin(FeedPlugin):
     """The feed's plugin: what it declares as attributes, what it does as methods (its two hosts'
     build, its market, the window its limiter keeps); the contract's defaults for the rest."""
 
-    api = "2.0"  # the contract it is written for (the class contract); its version: the distribution's
+    api = "2.2"  # the contract it is written for (2.2: what it attaches to, `apis`); its version: the distribution's
     name = "twse"
     title = "Taiwan Stock Exchange"
     about = "every listed stock's daily bars from TWSE's open data, from 2010 (no key)"
@@ -61,12 +68,23 @@ class TwsePlugin(FeedPlugin):
     # when its data is published (the library's freshness row for its plan): each day's bars once the
     # day is over, TWSE's close published
     delays = {"twse": {"stock": Delay("eod")}}
+    # what it attaches to (plugin API 2.2): TWSE's OpenAPI and its website's reports, with TWSE's pages (apis.py)
+    apis = APIS
 
     def build(self, settings, request_budget):
         """The two hosts, each on the library's keyless client (a client keeps its key, here none, to its
-        own host), both counted under the feed's name: one window, one daily cap for the machine."""
-        return TwseSource(public_client(self.name, WWW, settings, request_budget),
-                          public_client(self.name, OPENAPI, settings, None))
+        own host), both counted under the feed's name: one window, one daily cap for the machine. Each
+        client is noted under its API (held weakly: api_facts reads what it learned)."""
+        www = public_client(self.name, WWW, settings, request_budget)
+        openapi = public_client(self.name, OPENAPI, settings, None)
+        NOTES.note(SITE_NAME, www)
+        NOTES.note(OPENAPI_NAME, openapi)
+        return TwseSource(www, openapi)
+
+    def api_facts(self):
+        """What its clients learned of TWSE's two APIs while they ran (the requests made, the last answer's clock,
+        the day STOCK_DAY_ALL was of), from what this process already holds: nothing is asked (facts.py)."""
+        return NOTES.facts(a.name for a in self.apis)
 
     def markets(self, settings):
         return {"stock": self.name}

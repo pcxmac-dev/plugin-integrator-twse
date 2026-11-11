@@ -125,11 +125,11 @@ def test_the_app_loads_it_from_this_package_with_its_own_version():
     p = provider("twse")
     assert p is not None, dict(registry.errors())
     assert p.origin in {"package: plugin-integrator-twse (plugin_integrator_twse)", "plugins/plugin-integrator-twse (plugin_integrator_twse)"}
-    assert p.version == version("plugin-integrator-twse") and twse.PLUGIN.version == "" and p.api == "2.0"
+    assert p.version == version("plugin-integrator-twse") and twse.PLUGIN.version == "" and p.api == "2.2"
     assert registry.api_refusal(p.api) is None
     assert not [why for where, why in registry.errors() if "twse" in where or "twse" in why]
     row = {r["name"]: r for r in registry.menu()}["twse"]
-    assert (row["version"], row["api"]) == (version("plugin-integrator-twse"), "2.0")
+    assert (row["version"], row["api"]) == (version("plugin-integrator-twse"), "2.2")
 
 
 def test_it_carries_the_taiwan_stock_exchange_alone_on_its_own_days_and_limits():
@@ -149,12 +149,12 @@ def test_it_carries_the_taiwan_stock_exchange_alone_on_its_own_days_and_limits()
 
 
 def test_it_is_a_class_on_the_contract_and_the_app_loads_it_as_one():
-    assert isinstance(twse.PLUGIN, twse.TwsePlugin) and twse.PLUGIN.api == "2.0" and not twse.PLUGIN.is_record
+    assert isinstance(twse.PLUGIN, twse.TwsePlugin) and twse.PLUGIN.api == "2.2" and not twse.PLUGIN.is_record
     assert twse.PLUGIN.gives("build") and twse.PLUGIN.gives("markets") and twse.PLUGIN.gives("rate")
     assert not twse.PLUGIN.has_scan and not twse.PLUGIN.has_settings and not twse.PLUGIN.gives("view")
     assert twse.PLUGIN.delays == {"twse": {"stock": Delay("eod")}} and twse.PLUGIN.hours == {}
     p = registry.reload()["twse"]
-    assert type(p) is twse.TwsePlugin and (p.version, p.api) == (version("plugin-integrator-twse"), "2.0")
+    assert type(p) is twse.TwsePlugin and (p.version, p.api) == (version("plugin-integrator-twse"), "2.2")
     assert not [why for where, why in registry.errors() if "twse" in where or "twse" in why]
     moved = twse.PLUGIN.with_(order=1)  # a changed copy (the registry's version and origin come this way)
     assert type(moved) is twse.TwsePlugin and moved.order == 1 and twse.PLUGIN.order == 110
